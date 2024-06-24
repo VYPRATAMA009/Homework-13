@@ -16,20 +16,18 @@ export default function BookForm({ bookData }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (!selectedImage && !bookData) {
+    if (!selectedImage) {
       toast({
         title: "Error",
-        description: "Please select an image",
+        description: "Please select image",
         status: "error",
         duration: 5000,
         isClosable: true,
       });
-      return;
     }
-
     const formData = new FormData(event.target);
-    try {
-      if (bookData) {
+    if (bookData) {
+      try {
         await editBook(
           bookData.id,
           formData.get("title"),
@@ -45,22 +43,32 @@ export default function BookForm({ bookData }) {
           duration: 5000,
           isClosable: true,
         });
-      } else {
-        await createBook(formData);
-        event.target.reset();
-        setSelectedImage(null);
+      } catch (error) {
         toast({
-          title: "Success",
-          description: "Book created successfully",
-          status: "success",
+          title: "Error",
+          description: error.response.data.message || "Something went wrong",
+          status: "error",
           duration: 5000,
           isClosable: true,
         });
       }
+      return;
+    }
+    try {
+      await createBook(formData);
+      event.target.reset();
+      toast({
+        title: "Success",
+        description: "Book created successfully",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+      setSelectedImage("");
     } catch (error) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Something went wrong",
+        description: error.response.data.message || "Something went wrong",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -70,7 +78,7 @@ export default function BookForm({ bookData }) {
 
   useEffect(() => {
     if (bookData?.image) {
-      setSelectedImage(`http://localhost:8000/${bookData.image}`);
+      setSelectedImage(`http://localhost:8000/${bookData?.image}`);
     }
   }, [bookData]);
 
@@ -108,23 +116,24 @@ export default function BookForm({ bookData }) {
           />
         </FormControl>
         {selectedImage && (
-          <Image w={64} src={selectedImage} alt="Selected" />
+          <Image w={64} src={selectedImage} alt="Selected Image" />
         )}
-        <FormControl>
-          <FormLabel>Image</FormLabel>
-          <Input
-            name="image"
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              setSelectedImage(URL.createObjectURL(file));
-            }}
-          />
-        </FormControl>
-        <Button type="submit" colorScheme="teal">
-          {bookData ? "Edit Book" : "Create Book"}
-        </Button>
+        {!bookData?.image && (
+          <FormControl>
+            <FormLabel>Image</FormLabel>
+            <Input
+              name="image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                setSelectedImage(URL.createObjectURL(file));
+              }}
+            />
+          </FormControl>
+        )}
+
+        <Button type="submit">{bookData ? "Edit Book" : "Create Book"}</Button>
       </VStack>
     </form>
   );
